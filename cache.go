@@ -1,23 +1,70 @@
 package cache
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
 type Cache struct {
+	mu sync.Mutex
+	note 		map[string]data
 }
+type data struct{
+	value 		string
+	deadline  	*time.Time
+}
+
+
 
 func NewCache() Cache {
-	return Cache{}
+	return  Cache{
+		note: map[string]data{}}
 }
 
-func (receiver) Get(key string) (string, bool) {
+
+func (cache *Cache) Get(key string) (string, bool) {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+	if _, ok := cache.note[key]; !ok {
+		return "", false
+	}
+	if cache.note[key].deadline!=nil && cache.note[key].deadline.Before(time.Now()) {
+		return "", false
+	}
+	return cache.note[key].value, true
+
 
 }
 
-func (receiver) Put(key, value string) {
+
+func (cache *Cache) Put(key, value string) {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+	cache.note[key] = data{value,nil}
 }
 
-func (receiver) Keys() []string {
+func (cache *Cache) Keys() []string {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+	var sliceOfKeys []string
+	for k,v:=range cache.note{
+		if v.deadline!=nil && v.deadline.Before(time.Now()){
+			continue
+		}
+		sliceOfKeys=append(sliceOfKeys, k)
+	}
+	return sliceOfKeys
 }
 
-func (receiver) PutTill(key, value string, deadline time.Time) {
+func (cache *Cache) PutTill(key, value string, deadline time.Time) {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+	cache.note[key] = data{value, &deadline}
 }
+
+
+
+
+
+
+
